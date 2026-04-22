@@ -1,4 +1,4 @@
-# upskillcampus
+
 # 🎵 Naad Music Player (Java Swing)
 
 A **beautiful, modern desktop music player** built using **Java Swing** with custom UI components, smooth playback controls, and advanced features like playlists, shuffle, repeat, and equalizer presets.
