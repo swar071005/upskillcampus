@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Classical Music Player</title>
+
+<style>
+/* Reset */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: url("classical-bg.png") no-repeat center;
+  background-size: cover;
+}
+
+/* App container */
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(255, 248, 240, 0.85);
+}
+
+/* Header */
+.header {
+  background-color: #6f4e37;
+  color: white;
+  padding: 12px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Layout */
+.main {
+  display: flex;
+  flex: 1;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.upload-btn {
+  display: block;
+  background-color: #6f4e37;
+  color: white;
+  padding: 8px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.upload-btn input {
+  display: none;
+}
+
+.sidebar input {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 10px;
+}
+
+/* Song list */
+.songs {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.song {
+  padding: 10px;
+  margin-bottom: 8px;
+  background-color: rgba(255,255,255,0.7);
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.song:hover {
+  background-color: rgba(255,255,255,0.9);
+}
+
+/* Controls */
+.controls {
+  background-color: #6f4e37;
+  color: white;
+  padding: 10px;
+  text-align: center;
+}
+
+.buttons button {
+  margin: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+/* Sliders */
+input[type="range"] {
+  width: 60%;
+  margin: 5px auto;
+  display: block;
+}
+</style>
+
+</head>
+<body>
+
+<div class="app">
+
+  <div class="header">
+    🎼 Classical Music Studio
+  </div>
+
+  <div class="main">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <label class="upload-btn">
+        Upload Music
+        <input type="file" id="fileInput" multiple accept="audio/*">
+      </label>
+
+      <input type="text" id="search" placeholder="Search songs...">
+
+      <div class="favorites">
+        <h3>Favorites</h3>
+        <div id="favList"></div>
+      </div>
+    </div>
+
+    <!-- Song List -->
+    <div class="songs" id="songList"></div>
+
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div id="currentSong">No song selected</div>
+
+    <input type="range" id="progress" min="0" max="100" value="0">
+
+    <div class="buttons">
+      <button onclick="prevSong()">⏮</button>
+      <button onclick="togglePlay()">⏯</button>
+      <button onclick="nextSong()">⏭</button>
+    </div>
+
+    <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5">
+  </div>
+
+</div>
+
+<script>
+let songs = [];
+let currentIndex = 0;
+let audio = new Audio();
+let isPlaying = false;
+let favorites = [];
+
+const fileInput = document.getElementById("fileInput");
+const songList = document.getElementById("songList");
+const currentSong = document.getElementById("currentSong");
+const progress = document.getElementById("progress");
+const volume = document.getElementById("volume");
+const search = document.getElementById("search");
+const favList = document.getElementById("favList");
+
+/* Upload songs */
+fileInput.addEventListener("change", (e) => {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    songs.push({
+      name: file.name,
+      url: URL.createObjectURL(file)
+    });
+  });
+  renderSongs();
+});
+
+/* Render songs */
+function renderSongs() {
+  songList.innerHTML = "";
+  const filtered = songs.filter(s =>
+    s.name.toLowerCase().includes(search.value.toLowerCase())
+  );
+
+  filtered.forEach((song, index) => {
+    const div = document.createElement("div");
+    div.className = "song";
+    div.innerHTML = `
+      <span onclick="playSong(${index})">${song.name}</span>
+      <span onclick="toggleFav('${song.name}')">❤️</span>
+    `;
+    songList.appendChild(div);
+  });
+}
+
+/* Play */
+function playSong(index) {
+  const song = songs[index];
+  if (!song) return;
+
+  audio.src = song.url;
+  audio.play();
+  isPlaying = true;
+  currentIndex = index;
+  currentSong.innerText = song.name;
+}
+
+/* Toggle */
+function togglePlay() {
+  if (!audio.src) return;
+
+  if (isPlaying) {
+    audio.pause();
+  } else {
+    audio.play();
+  }
+  isPlaying = !isPlaying;
+}
+
+/* Next */
+function nextSong() {
+  if (!songs.length) return;
+  currentIndex = (currentIndex + 1) % songs.length;
+  playSong(currentIndex);
+}
+
+/* Previous */
+function prevSong() {
+  if (!songs.length) return;
+  currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+  playSong(currentIndex);
+}
+
+/* Progress */
+audio.addEventListener("timeupdate", () => {
+  if (!audio.duration) return;
+  progress.value = (audio.currentTime / audio.duration) * 100;
+});
+
+progress.addEventListener("input", () => {
+  audio.currentTime = (progress.value / 100) * audio.duration;
+});
+
+/* Volume */
+volume.addEventListener("input", () => {
+  audio.volume = volume.value;
+});
+
+/* Search */
+search.addEventListener("input", renderSongs);
+
+/* Favorites */
+function toggleFav(name) {
+  if (favorites.includes(name)) {
+    favorites = favorites.filter(f => f !== name);
+  } else {
+    favorites.push(name);
+  }
+  renderFav();
+}
+
+function renderFav() {
+  favList.innerHTML = "";
+  favorites.forEach(f => {
+    const div = document.createElement("div");
+    div.innerText = f;
+    favList.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
