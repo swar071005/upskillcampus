@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1229,21 +1229,48 @@ function playTrack(i) {
 }
 
 function nextTrack() {
-  if (shuffle) current = Math.floor(Math.random() * tracks.length);
-  else current = (current + 1) % tracks.length;
+  // Respect repeat and shuffle modes, then play the selected track
+  if (repeat === 'one') { playTrack(current); return; }
+
+  if (shuffle) {
+    let next = Math.floor(Math.random() * tracks.length);
+    if (tracks.length > 1 && next === current) next = (next + 1) % tracks.length;
+    current = next;
+  } else {
+    if (current === tracks.length - 1) {
+      if (repeat === 'all') current = 0;
+      else { // no repeat, stop playback at end
+        audio.pause(); playing = false; setVinylState(false); renderTracks(currentViewIndices()); return;
+      }
+    } else {
+      current = current + 1;
+    }
+  }
+
   if (audio) audio.currentTime = 0;
-  updateNowPlaying();
-  updateProgress();
-  renderTracks(currentViewIndices());
+  playTrack(current);
 }
 
 function prevTrack() {
   if (audio && audio.currentTime > 5) { audio.currentTime = 0; updateProgress(); return; }
-  current = (current - 1 + tracks.length) % tracks.length;
+
+  if (shuffle) {
+    let prev = Math.floor(Math.random() * tracks.length);
+    if (tracks.length > 1 && prev === current) prev = (prev + 1) % tracks.length;
+    current = prev;
+  } else {
+    if (current === 0) {
+      if (repeat === 'all') current = tracks.length - 1;
+      else { // at start and no repeat, stay
+        audio.pause(); playing = false; setVinylState(false); renderTracks(currentViewIndices()); return;
+      }
+    } else {
+      current = current - 1;
+    }
+  }
+
   if (audio) audio.currentTime = 0;
-  updateNowPlaying();
-  updateProgress();
-  renderTracks(currentViewIndices());
+  playTrack(current);
 }
 
 function toggleShuffle() { shuffle = !shuffle; document.getElementById('shuffle-btn').classList.toggle('active', shuffle); }
